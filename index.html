@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(to bottom right, #ff7f50, #ff1493);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .game-container {
+            text-align: center;
+        }
+        .status {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            border: 2px solid #fff;
+            background-color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border-radius: 10px;
+        }
+        .cell:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+            transform: scale(1.1);
+        }
+        /* Colorful X and O */
+        .cell.x {
+            color: #ff6347; /* Red color for X */
+        }
+        .cell.o {
+            color: #32cd32; /* Green color for O */
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            border: none;
+            background-color: #ff6347;
+            color: white;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ff4500;
+        }
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .board {
+                grid-template-columns: repeat(3, 30%);
+                grid-template-rows: repeat(3, 30%);
+            }
+            .status {
+                font-size: 1.5rem;
+            }
+            button {
+                font-size: 1rem;
+            }
+        }
+        .winner {
+            color: #32cd32;
+            font-weight: bold;
+        }
+        .draw {
+            color: #f0e68c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="status" id="status">Player X's turn</div>
+    <div class="board" id="board">
+        <!-- Cells will be added dynamically -->
+    </div>
+    <button onclick="resetGame()">Restart Game</button>
+</div>
+
+<!-- Audio for move, win, draw, and background music -->
+<audio id="move-sound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+<audio id="win-sound" src="https://www.soundjay.com/button/beep-10.wav" preload="auto"></audio>
+<audio id="draw-sound" src="https://www.soundjay.com/button/beep-09.wav" preload="auto"></audio>
+<audio id="background-music" src="https://www.soundjay.com/button/beep-01a.mp3" preload="auto" loop></audio>
+
+<script>
+    let currentPlayer = 'X';
+    let board = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ];
+
+    const boardElement = document.getElementById('board');
+    const statusElement = document.getElementById('status');
+    const moveSound = document.getElementById('move-sound');
+    const winSound = document.getElementById('win-sound');
+    const drawSound = document.getElementById('draw-sound');
+    const backgroundMusic = document.getElementById('background-music');
+
+    // Start background music
+    backgroundMusic.play();
+
+    // Initialize the board
+    function initializeBoard() {
+        boardElement.innerHTML = ''; // Clear the board before rendering
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                cell.addEventListener('click', handleCellClick);
+                boardElement.appendChild(cell);
+            }
+        }
+    }
+
+    // Handle cell click
+    function handleCellClick(event) {
+        const cell = event.target;
+        const row = cell.dataset.row;
+        const col = cell.dataset.col;
+
+        // Check if the cell is already filled
+        if (board[row][col] !== '') {
+            return; // Ignore if the cell is already filled
+        }
+
+        // Mark the cell with the current player's symbol
+        board[row][col] = currentPlayer;
+        cell.textContent = currentPlayer;
+
+        // Add class to color X and O
+        if (currentPlayer === 'X') {
+            cell.classList.add('x');
+        } else {
+            cell.classList.add('o');
+        }
+
+        // Play the move sound
+        moveSound.play();
+
+        // Check for a winner
+        if (checkWinner()) {
+            statusElement.textContent = `Player ${currentPlayer} wins!`;
+            statusElement.classList.add('winner');
+            disableBoard();
+            winSound.play();
+        } else if (isBoardFull()) {
+            statusElement.textContent = 'It\'s a draw!';
+            statusElement.classList.add('draw');
+            drawSound.play();
+        } else {
+            // Switch players
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusElement.textContent = `Player ${currentPlayer}'s turn`;
+        }
+    }
+
+    // Check if there is a winner
+    function checkWinner() {
+        // Check rows, columns, and diagonals
+        for (let i = 0; i < 3; i++) {
+            if (board[i][0] === currentPlayer && board[i][1] === currentPlayer && board[i][2] === currentPlayer) {
+                return true; // Row
+            }
+            if (board[0][i] === currentPlayer && board[1][i] === currentPlayer && board[2][i] === currentPlayer) {
+                return true; // Column
+            }
+        }
+
+        if (board[0][0] === currentPlayer && board[1][1] === currentPlayer && board[2][2] === currentPlayer) {
+            return true; // Diagonal
+        }
+        if (board[0][2] === currentPlayer && board[1][1] === currentPlayer && board[2][0] === currentPlayer) {
+            return true; // Diagonal
+        }
+
+        return false;
+    }
+
+    // Check if the board is full
+    function isBoardFull() {
+        return board.every(row => row.every(cell => cell !== ''));
+    }
+
+    // Disable the board after the game ends
+    function disableBoard() {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => cell.removeEventListener('click', handleCellClick));
+    }
+
+    // Reset the game
+    function resetGame() {
+        currentPlayer = 'X';
+        board = [
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', '']
+        ];
+        statusElement.textContent = `Player ${currentPlayer}'s turn`;
+        statusElement.classList.remove('winner', 'draw');
+        initializeBoard();
+    }
+
+    // Initialize the game
+    initializeBoard();
+</script>
+
+</body>
+</html>
